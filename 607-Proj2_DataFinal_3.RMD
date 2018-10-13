@@ -1,0 +1,157 @@
+---
+title: 'Project #2-607'
+author: "Robert_M"
+date: "October 13, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```{r}
+#Packages to Upload 
+library(tidyverse)
+
+#Dataset #1 - Top worldwide movies
+#Reading in the data
+WW <- url("https://raw.githubusercontent.com/robmercier/Project2/master/TopWWMovies.csv")
+TopWWMovies <- read.csv(WW,header = TRUE)
+
+#Changing the names of the columns
+names(TopWWMovies)[5] <- "Domestic"
+names(TopWWMovies)[6] <- "Domestic%"
+names(TopWWMovies)[7] <- "Overseas"
+names(TopWWMovies)[8] <- "Overseas%"
+head(TopWWMovies)
+
+#Deleting the Caret out of the "Year" column
+TopWWMovies$Year. <- gsub("\\^","",TopWWMovies$Year.)
+head(TopWWMovies)
+summary(TopWWMovies)
+
+#Deleting the extra header band of rows
+TopWWMovies <- TopWWMovies[-707,]
+TopWWMovies <- filter(TopWWMovies, Rank != "Rank")
+
+View(TopWWMovies)
+
+#Question 1 - Do certain movie studios have a higher average domestic grosses?
+
+#Deleting the Dollar Sign, N/As and the random "k" out of the "Domestic" column
+TopWWMovies$Domestic <- gsub("\\$","",TopWWMovies$Domestic)
+
+TopWWMovies$Domestic <- gsub("n/a","",TopWWMovies$Domestic)
+
+TopWWMovies$Domestic <- gsub("k","",TopWWMovies$Domestic)
+TopWWMovies$Domestic <- as.numeric(TopWWMovies$Domestic)
+
+#Averaging the totals by studio
+TopWWMovies %>%
+  group_by(Studio) %>% 
+  summarise(average = mean(Domestic))
+
+#Averaging the totals by studio and creating a new data frame
+Avg_Studio <- TopWWMovies %>%
+  group_by(Studio) %>% 
+  summarise(Avg_BO = mean(Domestic)) %>%
+  arrange(desc(Avg_BO))
+#Answer - Yes there are some studios with higher grosses w/ NM being the highest
+
+#Question 2 - Has international grosses gone up recently?
+
+#Deleting the Dollar Sign out of the "Overseas" column
+TopWWMovies$Overseas <- gsub("\\$","",TopWWMovies$Overseas)
+
+TopWWMovies$Overseas<- gsub("n/a","",TopWWMovies$Overseas)
+
+TopWWMovies$Overseas <- as.numeric(TopWWMovies$Overseas)
+
+Intl_Grosses <- TopWWMovies %>%
+  group_by(Year.) %>% 
+  summarise(Yearly_BO = mean(Overseas)) %>%
+  arrange(desc(Yearly_BO))
+
+Intl_Plot <- head(Intl_Grosses, 10)
+
+ggplot(Intl_Plot, aes(Intl_Plot$Year., Intl_Plot$Yearly_BO)) + geom_bar(stat="identity") + geom_text(aes(label=Intl_Plot$Year.), vjust=1.5, color="white") + labs(title = "Yearly Box Office")
+
+#Answer - it is easy to see other than the year 1982, the top move grosses are in the 2000's
+
+#Have movies been getting more popular, grossing more money lately? 
+TopWWMovies$Worldwide <- gsub("\\$","",TopWWMovies$Worldwide)
+
+TopWWMovies$Worldwide<- gsub("n/a","",TopWWMovies$Worldwide)
+
+# Code Deletes top movies - 
+# TopWWMovies$Worldwide <- as.numeric(TopWWMovies$Worldwide)
+
+Intl_Grosses <- TopWWMovies %>%
+  group_by(Year.) %>% 
+  summarise(Yearly_BO = mean(Worldwide)) %>%
+  arrange(desc(Yearly_BO))
+#The codes are not working for this dataframe.
+
+
+#Dataset #2 - 2018 World cup
+#Reading in the data
+WC <- url("https://raw.githubusercontent.com/robmercier/hello-world/master/FIFA2018.csv")
+FIFA <- read.csv(WC,header = TRUE)
+
+#Deleting the extra header columns
+FIFA <- FIFA[-c(23:27)]
+FIFA <- FIFA[-c(17:21)]
+FIFA <- FIFA[-c(10:14)]
+
+#Checking to see what teams had the most goals in the 2018 World Cup
+Goals <- FIFA %>%
+  group_by(Team) %>% 
+  summarise(Average_Goals = mean(Goal.Scored)) %>% 
+  arrange(desc(Average_Goals)) 
+#The answer is Belgium 
+
+#Checking to see if Ball Possession is related to goals scored, attempts or passes
+cor(FIFA$Ball.Possession.., FIFA$Goal.Scored )
+cor(FIFA$Ball.Possession.., FIFA$Attempts)
+cor(FIFA$Ball.Possession.., FIFA$Passes)
+#Ball Possession is most related to passing, the goals attempted then actual goals
+#thinking about it, it makes sense.  Passing it around give the offensive team the 
+#ball and moving it back and forth ensures the other team doesn't possess it. 
+#since, it is hard to actually score a goal, the possess isn't correlated. 
+
+#The Plot of possession to passes 
+plot(FIFA$Ball.Possession.., FIFA$Passes)
+
+#The .88 correlation is quite high.
+cor.test(FIFA$Ball.Possession.., FIFA$Passes)
+
+#Dataset #3 - LA Zip COdes
+#Reading in the data
+LA <- url("https://raw.githubusercontent.com/robmercier/Project2/master/2010_Census_Pop.csv")
+Pop <- read.csv(LA,header = TRUE)
+
+Pop %>%
+  select(Total.Households) %>% 
+  .[[1]] %>%
+  min()
+
+#Data cleansing - arranging and making the headers clearer. 
+Pop <- Pop %>%
+  filter(complete.cases(.)) %>%
+  rename('Zip' = Zip.Code, 'Population' = Total.Population, 'Med_Age' = Median.Age, 'Males' = Total.Males, 'females' = Total.Females ,'HHs' = Total.Households, 'HH_Size' = Average.Household.Size) %>%
+  arrange((Zip)) %>%
+  glimpse()
+
+#sumary of the zip code's populations 
+summary(Pop)
+
+#Checking to see what correlations are the highest
+cor(Pop)
+
+#graph of population
+qqnorm(Pop$Population, pch = 5, frame = FALSE)
+qqline(Pop$Population, col = "steelblue", lwd = .5)
+
+
+
+```
+
